@@ -1,0 +1,302 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Barrierefreier Spreewald Audioguide</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Removed external Lucide script to prevent ReferenceErrors -->
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Noto+Sans:wght@400;600;700&display=swap');
+        body { font-family: 'Noto Sans', sans-serif; }
+        .active-track { border-left: 4px solid #166534; background-color: #f0fdf4; }
+        /* Smooth height transition for accordion */
+        .track-content {
+            transition: max-height 0.3s ease-out, opacity 0.3s ease-out;
+            max-height: 0;
+            opacity: 0;
+            overflow: hidden;
+        }
+        .track-content.open {
+            max-height: 1000px; /* Arbitrary large height */
+            opacity: 1;
+        }
+    </style>
+</head>
+<body class="bg-stone-50 text-stone-800 min-h-screen flex flex-col">
+
+    <!-- Header -->
+    <header class="bg-emerald-800 text-white p-4 shadow-lg sticky top-0 z-10">
+        <div class="max-w-3xl mx-auto flex justify-between items-center">
+            <div>
+                <h1 class="text-xl font-bold">Spreewald Audioguide</h1>
+                <p class="text-xs text-emerald-200 uppercase tracking-wider">Barrierefreie Kulturreise</p>
+            </div>
+            <div id="global-controls" class="hidden">
+                <button id="stop-all-btn" class="p-2 bg-emerald-700 rounded-full hover:bg-emerald-600 transition" aria-label="Wiedergabe stoppen">
+                    <!-- Inline SVG for Square/Stop -->
+                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-5 h-5 text-white"><rect width="18" height="18" x="3" y="3" rx="2"/></svg>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="flex-grow max-w-3xl mx-auto w-full p-4 space-y-6">
+        
+        <!-- Intro Card -->
+        <div class="bg-white rounded-xl shadow-sm p-6 border border-stone-200">
+            <h2 class="text-lg font-bold mb-2 text-stone-700">Willkommen</h2>
+            <p class="text-stone-600 mb-4">
+                Dieser Audioguide begleitet Sie auf Ihrer zweitägigen, barrierefreien Reise durch den Spreewald. 
+                Er konzentriert sich auf die historischen und handwerklichen Hintergründe der Region, von den slawischen Wurzeln bis zur Industrialisierung.
+            </p>
+            <div class="flex items-center gap-2 text-sm text-amber-700 bg-amber-50 p-3 rounded-lg border border-amber-100">
+                <!-- Inline SVG for Info -->
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-4 h-4 flex-shrink-0"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/></svg>
+                <span>Tippen Sie auf einen Abschnitt unten, um den Text anzuzeigen oder anzuhören.</span>
+            </div>
+        </div>
+
+        <!-- Track List -->
+        <div id="track-list" class="space-y-3">
+            <!-- Tracks will be injected here by JS -->
+        </div>
+
+    </main>
+
+    <!-- Footer -->
+    <footer class="bg-stone-200 text-stone-600 p-6 text-center text-sm mt-8">
+        <p>&copy; 2025 Spreewald Kulturreise Planer</p>
+        <p class="mt-1 text-xs">Basierend auf dem Reisebericht</p>
+    </footer>
+
+    <script>
+        // Data derived from the user's report
+        const tracks = [
+            {
+                id: 1,
+                title: "Einführung: Eine Landschaft im Wandel",
+                duration: "2:00",
+                category: "Allgemein",
+                text: "Willkommen im Spreewald. Sie befinden sich in einer der faszinierendsten Kulturlandschaften Mitteleuropas. Was heute wie ein Idyll wirkt, ist das Ergebnis harter Arbeit und Anpassung. Dieses UNESCO-Biosphärenreservat ist ein Labyrinth aus hunderten Fließen, die lange Zeit die einzigen Verkehrswege waren. Jedes Haus, jeder Hof war eine Insel. Historisch prägten vor allem die Sorben und Wenden diese Region. Ihre Sprache, ihre Trachten und ihre Architektur sind bis heute sichtbar. Für Reisende mit Mobilitätseinschränkungen war dieses Labyrinth lange eine Hürde – hohe Brücken und Kopfsteinpflaster machten Wege beschwerlich. Doch das hat sich geändert. Heute erleben wir den Spreewald barrierefrei, ohne auf die Tiefe der Geschichte verzichten zu müssen."
+            },
+            {
+                id: 2,
+                title: "Lübbenau: Vom Handwerk zur Industrie",
+                duration: "2:30",
+                category: "Tag 1 - Geschichte",
+                text: "Wir starten unsere Reise in Lübbenau, dem Tor zum Spreewald. Unser Ziel ist das Torhaus am Topfmarkt. Hier, im Spreewaldmuseum, wird die große Transformation der Region greifbar. Stellen Sie sich vor: Bis ins 19. Jahrhundert war der Spreewald eine reine Selbstversorger-Region. Erst die Eisenbahn, liebevoll 'Rumpelguste' genannt, änderte alles. Im Museum können Sie der originalen Dampflokomotive 99 5703 auf Augenhöhe begegnen. Sie brachte Gurken und Leinen nach Berlin und Wohlstand in den Spreewald. Achten Sie in den Museums-Werkstätten auf die Details: Die Kürschnerei zeigt, wie wichtig warme Felle in den feuchten Wintern waren. Und der Kolonialwarenladen demonstriert, wie Kaffee und Gewürze selbst in die abgelegensten Dörfer fanden. Das Museum ist vollständig stufenlos erlebbar."
+            },
+            {
+                id: 3,
+                title: "Auf dem Wasser: Die Technik der Kahnfahrt",
+                duration: "2:15",
+                category: "Tag 1 - Erlebnis",
+                text: "Kein Spreewaldbesuch ist komplett ohne eine Kahnfahrt. Doch wie kommt man im Rollstuhl sicher an Bord? Die Antwort ist moderne Technik, versteckt in traditionellem Gewand. Wir nutzen einen speziellen Barrierefreiheits-Kahn. Er verfügt über einen hydraulischen Hublift. Dieser senkt sich sanft ab, sodass Sie direkt vom Kai auf den Kahnboden rollen können – ganz ohne schmale Bänke oder Kletterpartien. Während wir lautlos durch die Fließe gleiten, achten Sie bitte auf die Dächer der Häuser in Lehde. Die gekreuzten Schlangenköpfe am Dachfirst sind mehr als Deko. Es sind Giebelzeichen, die das Haus vor Unheil schützen sollen. Vom Wasser aus haben Sie den besten Blick auf diese architektonischen Details, ganz ohne das holprige Kopfsteinpflaster des Dorfes überwinden zu müssen."
+            },
+            {
+                id: 4,
+                title: "Die Slawenburg Raddusch: Wächter der Geschichte",
+                duration: "2:45",
+                category: "Tag 2 - Archäologie",
+                text: "Am zweiten Tag reisen wir weit zurück in die Zeit. Die Slawenburg Raddusch ist ein mächtiges Zeugnis des Stammes der Lusitzi aus dem 9. und 10. Jahrhundert. Schon von weitem sehen Sie den massiven Ringwall. Er ist hohl konstruiert – eine Meisterleistung aus Holz, Erde und Lehm. Im Inneren der Wallmauer verbirgt sich eine moderne archäologische Ausstellung. Hier sehen wir die Wurzeln des Handwerks: Keramikgefäße, die vor über tausend Jahren gefertigt wurden. Ihre Muster und Formen finden sich verblüffenderweise noch heute in der modernen Spreewaldkeramik wieder. Der Innenhof der Burg ist weitläufig und ebenerdig. Die Rampe zur Ausstellung im Wall ist vorhanden, aber etwas steil – hier lohnt sich der Einsatz eines elektrischen Antriebs oder einer helfenden Hand."
+            },
+            {
+                id: 5,
+                title: "Burg: Lebendiges Handwerk heute",
+                duration: "2:10",
+                category: "Tag 2 - Handwerk",
+                text: "Unsere letzte Station ist der Kurort Burg. Anders als das städtische Lübbenau ist Burg eine Streusiedlung. Die Höfe liegen weit auseinander, was uns viel Platz und flache Wege bietet. Hier besuchen wir eine der traditionellen Töpfereien, wie die von Elke Piezonka oder das Töpferstübchen Möbert. Der Spreewald hat reiche Tonvorkommen, und das Töpfern ist hier keine reine Show, sondern gelebtes Handwerk. Sie können oft direkt zuschauen, wie aus einem Klumpen Ton auf der Scheibe ein Krug entsteht. Achten Sie auf die Schwämmeltechnik – die bunten Muster, die mit kleinen Schwämmen aufgetupft werden. Es ist der perfekte Ort, um ein Stück fühlbare Geschichte mit nach Hause zu nehmen."
+            },
+             {
+                id: 6,
+                title: "Kulinarik: Die drei Säulen des Geschmacks",
+                duration: "1:30",
+                category: "Genuss",
+                text: "Zum Abschluss ein Wort zum Essen. Die Spreewaldküche war einst eine Arme-Leute-Küche, heute ist sie Kult. Sie basiert auf drei Säulen: Leinöl, Fisch und Gurken. Probieren Sie unbedingt Pellkartoffeln mit Quark und Leinöl. Das Öl wird hier frisch gepresst, es schmeckt nussig und ganz anders als das bittere Öl aus dem Supermarkt. In den barrierefreien Restaurants wie dem 'Spreewaldeck' oder dem 'Louisenhof' wird diese Tradition gepflegt. Genießen Sie es – es ist der Geschmack der Region."
+            }
+        ];
+
+        // Global Speech Synthesis Variables
+        let synth = window.speechSynthesis;
+        let currentUtterance = null;
+        let currentlyPlayingId = null;
+        
+        // Icon definitions (Inline SVG strings) to replace external library
+        const icons = {
+            play: `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-4 h-4 fill-current"><polygon points="5 3 19 12 5 21 5 3"/></svg>`,
+            pause: `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-4 h-4 fill-current"><rect width="4" height="16" x="6" y="4"/><rect width="4" height="16" x="14" y="4"/></svg>`,
+            chevron: (id) => `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-5 h-5 text-stone-400 transition-transform duration-300" id="chevron-${id}"><path d="m6 9 6 6 6-6"/></svg>`
+        };
+
+        function init() {
+            renderTracks();
+            
+            // Check speech support
+            if (!('speechSynthesis' in window)) {
+                alert("Ihr Browser unterstützt leider keine Sprachausgabe (Text-to-Speech).");
+            }
+            
+            // Global Stop Listener
+            document.getElementById('stop-all-btn').addEventListener('click', stopAudio);
+        }
+
+        function renderTracks() {
+            const container = document.getElementById('track-list');
+            container.innerHTML = '';
+
+            tracks.forEach(track => {
+                const trackEl = document.createElement('div');
+                trackEl.className = 'bg-white rounded-lg shadow-sm border border-stone-200 overflow-hidden';
+                trackEl.id = `track-${track.id}`;
+                
+                trackEl.innerHTML = `
+                    <div class="p-4 flex justify-between items-center cursor-pointer hover:bg-stone-50 transition" onclick="toggleTrack(${track.id})">
+                        <div class="flex items-center gap-3">
+                            <div class="bg-emerald-100 text-emerald-800 p-2 rounded-full w-10 h-10 flex items-center justify-center font-bold text-sm">
+                                ${track.id}
+                            </div>
+                            <div>
+                                <h3 class="font-semibold text-stone-800">${track.title}</h3>
+                                <span class="text-xs text-stone-500 font-medium bg-stone-100 px-2 py-0.5 rounded">${track.category}</span>
+                            </div>
+                        </div>
+                        ${icons.chevron(track.id)}
+                    </div>
+                    
+                    <div id="content-${track.id}" class="track-content bg-stone-50">
+                        <div class="p-4 pt-0 border-t border-stone-100">
+                            <div class="mt-4 flex gap-3 mb-4">
+                                <button onclick="playTrack(${track.id}, event)" id="btn-play-${track.id}" class="flex items-center gap-2 bg-emerald-600 text-white px-4 py-2 rounded-lg hover:bg-emerald-700 transition shadow-sm">
+                                    ${icons.play}
+                                    <span id="label-play-${track.id}">Vorlesen</span>
+                                </button>
+                            </div>
+                            <p class="text-stone-700 leading-relaxed text-lg font-light max-w-none prose">
+                                ${track.text}
+                            </p>
+                        </div>
+                    </div>
+                `;
+                container.appendChild(trackEl);
+            });
+        }
+
+        function toggleTrack(id) {
+            const content = document.getElementById(`content-${id}`);
+            const chevron = document.getElementById(`chevron-${id}`);
+            const isOpen = content.classList.contains('open');
+
+            // Close all others first (optional, accordion style)
+            document.querySelectorAll('.track-content').forEach(el => {
+                el.classList.remove('open');
+            });
+            document.querySelectorAll('[id^="chevron-"]').forEach(el => {
+                el.style.transform = 'rotate(0deg)';
+            });
+
+            if (!isOpen) {
+                content.classList.add('open');
+                chevron.style.transform = 'rotate(180deg)';
+            }
+        }
+
+        function playTrack(id, event) {
+            // Stop propagation to prevent accordion toggle
+            if(event) event.stopPropagation();
+
+            const track = tracks.find(t => t.id === id);
+            
+            // If clicking the same track that is playing
+            if (currentlyPlayingId === id) {
+                if (synth.paused) {
+                    synth.resume();
+                    updateButtonState(id, 'playing');
+                } else {
+                    synth.pause();
+                    updateButtonState(id, 'paused');
+                }
+                return;
+            }
+
+            // Stop any previous track
+            stopAudio();
+
+            // Setup new utterance
+            const utterance = new SpeechSynthesisUtterance(track.text);
+            utterance.lang = 'de-DE';
+            utterance.rate = 0.9; // Slightly slower for better comprehension
+            utterance.pitch = 1.0;
+
+            // Voice selection (try to find a German voice)
+            const voices = synth.getVoices();
+            const deVoice = voices.find(v => v.lang.includes('de'));
+            if (deVoice) utterance.voice = deVoice;
+
+            // Events
+            utterance.onend = () => {
+                currentlyPlayingId = null;
+                resetButtons();
+                document.getElementById('global-controls').classList.add('hidden');
+            };
+
+            // Start speaking
+            synth.speak(utterance);
+            currentUtterance = utterance;
+            currentlyPlayingId = id;
+            
+            updateButtonState(id, 'playing');
+            document.getElementById('global-controls').classList.remove('hidden');
+        }
+
+        function stopAudio() {
+            if (synth.speaking || synth.paused) {
+                synth.cancel();
+            }
+            currentlyPlayingId = null;
+            resetButtons();
+            document.getElementById('global-controls').classList.add('hidden');
+        }
+
+        function updateButtonState(id, state) {
+            // Reset all others first
+            resetButtons();
+            
+            const btn = document.getElementById(`btn-play-${id}`);
+            
+            // Re-highlight active track container
+            document.getElementById(`track-${id}`).classList.add('active-track');
+
+            if (state === 'playing') {
+                btn.classList.replace('bg-emerald-600', 'bg-amber-600');
+                btn.classList.replace('hover:bg-emerald-700', 'hover:bg-amber-700');
+                // Directly set HTML, no need for separate label reference
+                btn.innerHTML = `${icons.pause} <span id="label-play-${id}">Pause</span>`;
+            } else if (state === 'paused') {
+                btn.innerHTML = `${icons.play} <span id="label-play-${id}">Weiter</span>`;
+            }
+        }
+
+        function resetButtons() {
+            // Remove highlighting
+            document.querySelectorAll('.active-track').forEach(el => el.classList.remove('active-track'));
+
+            tracks.forEach(t => {
+                const btn = document.getElementById(`btn-play-${t.id}`);
+                if(btn) {
+                    btn.className = "flex items-center gap-2 bg-emerald-600 text-white px-4 py-2 rounded-lg hover:bg-emerald-700 transition shadow-sm";
+                    // FIX: Ensure ID is preserved for the span
+                    btn.innerHTML = `${icons.play} <span id="label-play-${t.id}">Vorlesen</span>`;
+                }
+            });
+        }
+        
+        // Init voices (chrome needs this event)
+        window.speechSynthesis.onvoiceschanged = () => {};
+
+        window.onload = init;
+
+    </script>
+</body>
+</html>
